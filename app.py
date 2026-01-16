@@ -16,7 +16,7 @@ if user_api_key:
         genai.configure(api_key=user_api_key)
         
         # 모델 설정 (이름 앞에 models/를 붙여 더 정확하게 지정합니다)
-        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-1.5-pro')
 
         # 채팅 기록 초기화
         if "messages" not in st.session_state:
