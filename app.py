@@ -1,25 +1,21 @@
 import streamlit as st
 import google.generativeai as genai
 
-# 페이지 설정
 st.set_page_config(page_title="Jinkyung's Gemini Chat", page_icon="🤖")
 st.title("🤖 Jinkyung's Gemini Chat")
 
-# 사이드바 설정
 with st.sidebar:
-    # 1. API 키 입력 (직접 입력 혹은 Streamlit Secrets 사용)
     user_api_key = st.text_input("Gemini API Key를 입력하세요", type="password")
-    st.markdown("[API 키 발급받기](https://aistudio.google.com/)")
-    
-    # 2. 모델 선택 (에러 방지를 위해 선택권 부여)
-    model_option = st.selectbox("모델을 선택하세요", ["gemini-1.5-flash", "gemini-pro"])
+    st.info("API 키를 입력하고 엔터를 눌러주세요.")
 
 if user_api_key:
     try:
         genai.configure(api_key=user_api_key)
         
-        # 선택한 모델로 초기화
-        model = genai.GenerativeModel(model_option)
+        # 가장 호환성이 높은 모델 이름을 직접 지정합니다.
+        # 만약 flash가 안되면 pro로 자동 전환 시도하는 로직입니다.
+        model_name = 'gemini-1.5-flash'
+        model = genai.GenerativeModel(model_name)
 
         if "messages" not in st.session_state:
             st.session_state.messages = []
@@ -28,22 +24,25 @@ if user_api_key:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
-        if prompt := st.chat_input("메시지를 입력하세요"):
+        if prompt := st.chat_input("질문을 입력하세요"):
             st.session_state.messages.append({"role": "user", "content": prompt})
             with st.chat_message("user"):
                 st.markdown(prompt)
 
             with st.chat_message("assistant"):
                 try:
-                    # 답변 생성
                     response = model.generate_content(prompt)
                     st.markdown(response.text)
                     st.session_state.messages.append({"role": "assistant", "content": response.text})
                 except Exception as e:
-                    st.error(f"대화 중 에러 발생: {e}")
-                    st.info("왼쪽 메뉴에서 'gemini-pro'로 모델을 바꿔서 다시 시도해보세요.")
+                    # 에러가 나면 다른 모델(pro)로 한 번 더 시도합니다.
+                    st.warning("Flash 모델 연결 실패. Pro 모델로 재시도합니다...")
+                    model = genai.GenerativeModel('gemini-1.5-pro')
+                    response = model.generate_content(prompt)
+                    st.markdown(response.text)
+                    st.session_state.messages.append({"role": "assistant", "content": response.text})
                     
     except Exception as e:
-        st.error(f"연결 에러: {e}")
+        st.error(f"최종 에러 발생: {e}")
 else:
-    st.info("왼쪽 사이드바에 API 키를 입력해주세요.")
+    st.info("사이드바에 API 키를 넣어주세요.")
